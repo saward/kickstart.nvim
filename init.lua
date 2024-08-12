@@ -128,6 +128,10 @@ vim.opt.smartcase = true
 -- Keep signcolumn on by default
 vim.opt.signcolumn = 'yes'
 
+vim.opt.colorcolumn = '80'
+
+vim.opt.scrollback = 100000
+
 -- Decrease update time
 vim.opt.updatetime = 250
 
@@ -190,6 +194,22 @@ vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right win
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
 vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
+-- Toggle opening/closing minifiles.
+local minifiles_toggle = function(...)
+  if not MiniFiles.close() then
+    MiniFiles.open(...)
+  end
+end
+vim.keymap.set('n', '-', function()
+  minifiles_toggle()
+end)
+vim.keymap.set('n', '_', function()
+  minifiles_toggle(vim.api.nvim_buf_get_name(0))
+end)
+
+-- open file_browser with the path of the current buffer
+vim.keymap.set('n', '<space>fb', ':Telescope file_browser path=%:p:h select_buffer=true<CR>')
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -250,6 +270,52 @@ require('lazy').setup({
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
     'lewis6991/gitsigns.nvim',
+    --    config = function()
+    --      local gitsigns = require 'gitsigns'
+    --      local function map(mode, l, r, opts)
+    --        opts = opts or {}
+    --        opts.buffer = bufnr
+    --        vim.keymap.set(mode, l, r, opts)
+    --      end
+    --
+    --      -- Navigation
+    --      map('n', ']c', function()
+    --        if vim.wo.diff then
+    --          vim.cmd.normal { ']c', bang = true }
+    --        else
+    --          gitsigns.nav_hunk 'next'
+    --        end
+    --      end)
+    --
+    --      map('n', '[c', function()
+    --        if vim.wo.diff then
+    --          vim.cmd.normal { '[c', bang = true }
+    --        else
+    --          gitsigns.nav_hunk 'prev'
+    --        end
+    --      end)
+    --      map('n', '<leader>hs', gitsigns.stage_hunk)
+    --      map('n', '<leader>hr', gitsigns.reset_hunk)
+    --      map('v', '<leader>hs', function()
+    --        gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
+    --      end)
+    --      map('v', '<leader>hr', function()
+    --        gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
+    --      end)
+    --      map('n', '<leader>hS', gitsigns.stage_buffer)
+    --      map('n', '<leader>hu', gitsigns.undo_stage_hunk)
+    --      map('n', '<leader>hR', gitsigns.reset_buffer)
+    --      map('n', '<leader>hp', gitsigns.preview_hunk)
+    --      map('n', '<leader>hb', function()
+    --        gitsigns.blame_line { full = true }
+    --      end)
+    --      map('n', '<leader>tb', gitsigns.toggle_current_line_blame)
+    --      map('n', '<leader>hd', gitsigns.diffthis)
+    --      map('n', '<leader>hD', function()
+    --        gitsigns.diffthis '~'
+    --      end)
+    --      map('n', '<leader>td', gitsigns.toggle_deleted)
+    --    end,
     opts = {
       signs = {
         add = { text = '+' },
@@ -258,6 +324,59 @@ require('lazy').setup({
         topdelete = { text = '‾' },
         changedelete = { text = '~' },
       },
+      on_attach = function(bufnr)
+        local gitsigns = require 'gitsigns'
+
+        local function map(mode, l, r, opts)
+          opts = opts or {}
+          opts.buffer = bufnr
+          vim.keymap.set(mode, l, r, opts)
+        end
+
+        -- Navigation
+        map('n', ']c', function()
+          if vim.wo.diff then
+            vim.cmd.normal { ']c', bang = true }
+          else
+            gitsigns.nav_hunk 'next'
+          end
+        end, { desc = 'Jump to next git [c]hange' })
+
+        map('n', '[c', function()
+          if vim.wo.diff then
+            vim.cmd.normal { '[c', bang = true }
+          else
+            gitsigns.nav_hunk 'prev'
+          end
+        end, { desc = 'Jump to previous git [c]hange' })
+
+        -- Actions
+        -- visual mode
+        map('v', '<leader>hs', function()
+          gitsigns.stage_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end, { desc = 'stage git hunk' })
+        map('v', '<leader>hr', function()
+          gitsigns.reset_hunk { vim.fn.line '.', vim.fn.line 'v' }
+        end, { desc = 'reset git hunk' })
+        -- normal mode
+        map('n', '<leader>hs', gitsigns.stage_hunk, { desc = 'git [s]tage hunk' })
+        map('n', '<leader>hr', gitsigns.reset_hunk, { desc = 'git [r]eset hunk' })
+        map('n', '<leader>hS', gitsigns.stage_buffer, { desc = 'git [S]tage buffer' })
+        map('n', '<leader>hu', gitsigns.undo_stage_hunk, { desc = 'git [u]ndo stage hunk' })
+        map('n', '<leader>hR', gitsigns.reset_buffer, { desc = 'git [R]eset buffer' })
+        map('n', '<leader>hp', gitsigns.preview_hunk, { desc = 'git [p]review hunk' })
+        map('n', '<leader>hb', function()
+          gitsigns.blame_line { full = true }
+        end, { desc = 'git [b]lame line' })
+        -- map('n', '<leader>hb', gitsigns.blame_line, { desc = 'git [b]lame line' })
+        map('n', '<leader>hd', gitsigns.diffthis, { desc = 'git [d]iff against index' })
+        map('n', '<leader>hD', function()
+          gitsigns.diffthis '@'
+        end, { desc = 'git [D]iff against last commit' })
+        -- Toggles
+        map('n', '<leader>tb', gitsigns.toggle_current_line_blame, { desc = '[T]oggle git show [b]lame line' })
+        map('n', '<leader>tD', gitsigns.toggle_deleted, { desc = '[T]oggle git show [D]eleted' })
+      end,
     },
   },
 
@@ -568,9 +687,9 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         -- clangd = {},
-        -- gopls = {},
+        gopls = {},
         -- pyright = {},
-        -- rust_analyzer = {},
+        rust_analyzer = {},
         -- ... etc. See `:help lspconfig-all` for a list of all the pre-configured LSPs
         --
         -- Some languages (like typescript) have entire language plugins that can be useful:
@@ -731,7 +850,7 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<CR>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
@@ -868,10 +987,10 @@ require('lazy').setup({
     end,
   },
 
-  -- {
-  --   'nvim-telescope/telescope-file-browser.nvim',
-  --   dependencies = { 'nvim-telescope/telescope.nvim', 'nvim-lua/plenary.nvim' },
-  -- },
+  {
+    'nvim-telescope/telescope-file-browser.nvim',
+    dependencies = { 'nvim-telescope/telescope.nvim', 'nvim-lua/plenary.nvim' },
+  },
 
   -- The following two comments only work if you have downloaded the kickstart repo, not just copy pasted the
   -- init.lua. If you want these files, they are in the repository, so you can just download them and
@@ -916,12 +1035,6 @@ require('lazy').setup({
     },
   },
 })
-
-vim.keymap.set('n', '<space>fb', ':Telescope file_browser<CR>')
-vim.keymap.set('n', '-', ':lua MiniFiles.open()<CR>')
-
--- open file_browser with the path of the current buffer
-vim.keymap.set('n', '<space>fb', ':Telescope file_browser path=%:p:h select_buffer=true<CR>')
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
