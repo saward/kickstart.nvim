@@ -365,6 +365,7 @@ require('lazy').setup({
         map('n', '<leader>hu', gitsigns.undo_stage_hunk, { desc = 'git [u]ndo stage hunk' })
         map('n', '<leader>hR', gitsigns.reset_buffer, { desc = 'git [R]eset buffer' })
         map('n', '<leader>hp', gitsigns.preview_hunk, { desc = 'git [p]review hunk' })
+        map('n', '<leader>hB', gitsigns.blame, { desc = 'git [B]lame' })
         map('n', '<leader>hb', function()
           gitsigns.blame_line { full = true }
         end, { desc = 'git [b]lame line' })
@@ -379,6 +380,12 @@ require('lazy').setup({
       end,
     },
   },
+  -- {
+  --   'FabijanZulj/blame.nvim',
+  --   config = function()
+  --     require('blame').setup()
+  --   end,
+  -- },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
   --
